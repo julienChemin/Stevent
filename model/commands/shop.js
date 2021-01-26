@@ -50,7 +50,7 @@ module.exports = {
     description: 'Display the event shop',
     guildOnly: true,
     cooldown: 5,
-    execute(message, args) {
+    execute(client, message, args) {
         const { commands } = message.client;
         const reactFilter = (reaction, user) => user.id === message.author.id && arrayEmoji[index].includes(reaction.emoji.name);
         const addReactToEmbed = (embededMsg) => {

@@ -3,7 +3,7 @@ module.exports = {
     aliases:["reping", "rereping"],
     description: "reply 'pong'",
     dmOnly: true,
-    execute(message, args) {
+    execute(client, message, args) {
         message.channel.send('pong !');
     }
 }

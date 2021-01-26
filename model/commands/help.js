@@ -5,9 +5,9 @@ module.exports = {
     name: 'help',
     aliases: ['command', 'commands'],
     description: 'display all commands or info about a specific command',
-    usage: '<[command name]>',
+    usage: '<command name>',
     cooldown: 5,
-    execute(message, args) {
+    execute(client, message, args) {
         const { commands } = message.client;
         if (!args.length) {
             // display all commands
@@ -34,9 +34,9 @@ module.exports = {
                 return message.channel.send(`I don't have a command with this name`);
             } else {
                 const data = [];
-                data.push(`${command.name} (${command.aliases || 'no aliases'})`);
-                data.push(`${command.description}`);
-                data.push(`${prefixe}${command.name} ${command.usages || ''}`);
+                data.push(`Name : ${command.name}\nAliases : [${command.aliases || 'no aliases'}]`);
+                data.push(`Description : ${command.description}`);
+                data.push(`Syntaxe : ${prefixe}${command.name} ${command.usages || ''}`);
                 return message.channel.send(data);
             }
         }

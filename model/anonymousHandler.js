@@ -1,3 +1,6 @@
+const Discord = require('discord.js');
+const { uniqueChannels } = require('../config.json');
+
 const anonymousHandler = {
     anonymousUsersId: {}, // user_id: anonymous_user_id
     anonymousChannels: {}, // anonymous_user_id: channel_id
@@ -13,10 +16,6 @@ const anonymousHandler = {
             }).on('end', resolve);
         });
     }, */
-
-    fakeEncrypting: (string) => {
-        return string += "fake";
-    },
 
     getIdByChannel: (channelId, trueId = true) => {
         const arrKey = Object.keys(anonymousHandler.anonymousChannels);
@@ -43,6 +42,35 @@ const anonymousHandler = {
             }
         }
         return undefined;
+    },
+
+    getEmbed: (messageContent, author = null) => {
+        // author = null mean anonymous dm
+        const embed = new Discord.MessageEmbed()
+            .setColor('#0099ff')
+            .addField('Message', messageContent);
+    
+        if (author !== null) {
+            embed.setAuthor(`${author.tag} aka ${author.username}`, author.avatarURL());
+        } else {
+            embed.setAuthor(`Anonyme user`)
+                .setFooter("Use !closedm to end this conversation and close the channel");
+        }
+    
+        return embed;
+    },
+
+    encrypting: (string) => {
+        return string += 'fake';
+    },
+
+    orderChannel: async (category) => {
+        let incr = 1;
+        await category.children.filter(child => !uniqueChannels.includes(child.id)).each(child => {
+            child.setName(`anonymous_chan_${incr}`);
+            incr++;
+        });
+        return;
     }
 }
 module.exports = anonymousHandler;

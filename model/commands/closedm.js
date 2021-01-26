@@ -1,6 +1,6 @@
-const Discord = require('discord.js');
 const fs = require("fs");
-const { dmCategorySnowflake, channelArchivesSnowflake } = require('../../config.json');
+const { dmCategorySnowflake, 
+    channelArchivesSnowflake } = require('../../config.json');
 const anonymousHandler = require("./../anonymousHandler.js");
 
 const writeFile = (filePath, fileContent) => {
@@ -19,17 +19,13 @@ const writeFile = (filePath, fileContent) => {
 module.exports = {
     name: 'closedm',
     aliases: ['close-dm', 'close_dm'],
-    description: 'Close an anonymousDm channel and archive discussion',
-    usage: '<[command name]>',
+    description: 'Close an anonymousDm channel and archive discussion. Depend on the anonymous channel where you use that command. Work only on anonymous channel.',
+    usage: '<(string) command name>',
     guildOnly: true,
     snowflakeCategory: dmCategorySnowflake,
-    cooldown: 5,
-    execute(message, args) {
-        if (message.channel.id === channelArchivesSnowflake) {
-            // avoid to delete the "archives" channel
-            return;
-        }
-
+    forbiddenChannel: [channelArchivesSnowflake],
+    cooldown: 3,
+    execute(client, message, args) {
         const anonymousCategory = message.guild.channels.cache.get(dmCategorySnowflake);
         const archivesChannel = anonymousCategory.children.get(channelArchivesSnowflake);   
 
@@ -43,8 +39,16 @@ module.exports = {
             const archiveFolderFilePath = `./util/archivesDm/${anonymousId}-${(archiveOfThisUser.length + 1)}.txt`;
             let fileContent = "";
             messages.array().reverse().map(msg => {
-                const username = msg.author.username === 'Stevent' ? "Anonymous user" : `${msg.author.tag} aka ${msg.author.username}`;
-                const content = msg.content !== '' ? msg.content : msg.embeds[0].content;
+                const username = msg.author.username === 'Stevent' ? "Anonymous user#???? aka User" : `${msg.author.tag} aka ${msg.author.username}`;
+                let content = '';
+                if (msg.content !== '') {
+                    content = msg.content;
+                } else {
+                    for (field of msg.embeds[0].fields) {
+                        content += `${field.value} \n`;
+                    }
+                }
+
                 fileContent += `${username} \n\n`;
                 fileContent += `${content} \n\n`;
                 fileContent += `____ ____ ____ ____ ____ ____ ____ ____ \n\n`;
@@ -53,14 +57,16 @@ module.exports = {
                 message.reply(`Look like i can't set the archive .. \n Error : ${error}`);
             });
 
-            archivesChannel.send(`Archive ${anonymousId}`, {
+            archivesChannel.send(`\n Archive ${anonymousId} \n`, {
                 files:[{
                     attachment: filepath
                 }]
             }).then(() => {
-                message.channel.delete();
+                message.channel.delete().then(() => {
+                    anonymousHandler.orderChannel(message.guild.channels.cache.get(dmCategorySnowflake));
+                });
             }).catch(error => {
-                message.reply(`I don't know why but, i can't delete this channel.. Just do it !`);
+                message.reply(`Can't delete or order the channels : ${error}`);
             });
         });
     }

@@ -1,7 +1,9 @@
 // file reader
 const fs = require('fs');
 const Discord = require('discord.js');
-const { prefixe, token, guildSnowflake } = require("./config.json");
+const { prefixe, 
+    token, 
+    guildSnowflake } = require("./config.json");
 
 const client = new Discord.Client();
 client.commands = new Discord.Collection();
@@ -51,10 +53,15 @@ client.on('message', message => {
             return message.channel.send('sorry, you can\'t ask me that in dm');
         }
         if (command.dmOnly && message.channel.type === 'text') {
-            return message.channel.send('dude, this is private ! ask me in Dm..');
+            return message.reply('dude, this is private ! ask me in Dm..');
         }
         if (command.snowflakeCategory !== undefined && Guild.channels.cache.get(command.snowflakeCategory).children.get(message.channel.id) === undefined) {
-            return;
+            return message.reply(`This is not the right place to use this command. Use !help ${command.name} for more info`);
+        }
+
+        //check if there is forbidden channel
+        if (command.forbiddenChannel !== undefined && command.forbiddenChannel.includes(message.channel.id)) {
+            return message.reply(`This is not the right place to use this command. Use <!help ${command.name}> for more info`);
         }
 
         // check if args are require and if there are
@@ -89,7 +96,7 @@ client.on('message', message => {
 
         // execute the command
         try {
-            command.execute(message, args);
+            command.execute(client, message, args);
         } catch (error) {
             console.error(error);
             message.reply('Sorry, i can\'t get what you said');
@@ -101,7 +108,6 @@ client.on('message', message => {
             anonymousDm.receiveDm(client, message);
         } else {
             // user just send a message
-            anonymousDm.replyToDm(client, message);
         }
     }
 });

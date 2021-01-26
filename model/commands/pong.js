@@ -4,7 +4,7 @@ module.exports = {
     guildOnly: true,
     args: true,
     usage:'<number>',
-    execute(message, args) {
+    execute(client, message, args) {
         if (isNaN(args[0])) {
             return;
         }
