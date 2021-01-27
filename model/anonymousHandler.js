@@ -34,16 +34,20 @@ const anonymousHandler = {
         return undefined;
     },
     
-    getUserIdByAnonymousId: (anonymousId) => {
+    getUserIdByAnonymousId: (anonymousUserId) => {
         const arrKey = Object.keys(anonymousHandler.anonymousUsersId);
         const arrUser = Object.values(anonymousHandler.anonymousUsersId);
         
         for (let i = 0; i < arrUser.length; i++) {
-            if (arrUser[i] === anonymousId) {
+            if (arrUser[i] === anonymousUserId) {
                 return arrKey[i];
             }
         }
         return undefined;
+    },
+
+    getPseudo: (anonymousUserId) => {
+        return anonymousHandler.anonymousPseudos[anonymousUserId];
     },
 
     getEmbed: (messageContent, username, author = null) => {

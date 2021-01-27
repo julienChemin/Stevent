@@ -34,7 +34,7 @@ const AnonymousDm = {
             anonymousHandler.anonymousPseudos[anonymousId] = randomPseudo;
         }
         const anonymousUserId = anonymousHandler.anonymousUsersId[message.author.id];
-        const pseudo = anonymousHandler.anonymousPseudos[anonymousUserId];
+        const pseudo = anonymousHandler.getPseudo(anonymousUserId);
 
         if (anonymousHandler.blockedUsers[anonymousUserId] !== undefined) {
             // this user is blocked

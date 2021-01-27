@@ -2,6 +2,7 @@ const fs = require("fs");
 const { dmCategorySnowflake, 
     channelArchivesSnowflake,
     archivesFolderPath } = require('../../config.json');
+const { anonymousPseudos } = require("./../anonymousHandler.js");
 const anonymousHandler = require("./../anonymousHandler.js");
 
 const writeFile = (filePath, fileContent) => {
@@ -30,17 +31,25 @@ module.exports = {
         const anonymousCategory = message.guild.channels.cache.get(dmCategorySnowflake);
         const archivesChannel = anonymousCategory.children.get(channelArchivesSnowflake);   
 
-        // get anonymous user id depending on the channel
+        // get anonymous user id depending on the channel, and anonymous pseudo
         const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
+        const pseudo = anonymousHandler.getPseudo(anonymousId);
+
+        // prevent an impossible error
+        if (anonymousId === undefined || pseudo === undefined) {
+            return message.reply(`Can't find the channel to delete OR the anonymous pseudo for this user... check the bdd !`);
+        }
+
+        const fullPseudo = `${pseudo}${anonymousId.substr(0, 5)}`;
 
         // get all archives for this anonymous id
         const archiveOfThisUser = fs.readdirSync(archivesFolderPath).filter(file => file.startsWith(anonymousId));
 
         message.channel.messages.fetch().then(async messages => {
-            const archiveFolderFilePath = `${archivesFolderPath}/${anonymousId}-${(archiveOfThisUser.length + 1)}.txt`;
+            const archiveFolderFilePath = `${archivesFolderPath}/${fullPseudo}-${(archiveOfThisUser.length + 1)}.txt`;
             let fileContent = "";
             messages.array().reverse().map(msg => {
-                const username = msg.author.username === 'Stevent' ? msg.embeds[0].author.name : `${msg.author.tag} aka ${msg.author.username}`;
+                const username = msg.author.username === 'Stevent' ? fullPseudo : `${msg.author.tag} aka ${msg.author.username}`;
                 let content = '';
                 if (msg.content !== '') {
                     content = msg.content;
@@ -58,7 +67,7 @@ module.exports = {
                 message.reply(`Look like i can't set the archive .. \n Error : ${error}`);
             });
 
-            archivesChannel.send(`\n Archive ${anonymousId} \n`, {
+            archivesChannel.send(`\n Archive ${fullPseudo}-${(archiveOfThisUser.length + 1)} \n`, {
                 files:[{
                     attachment: filepath
                 }]
