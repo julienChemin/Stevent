@@ -10,6 +10,7 @@ client.commands = new Discord.Collection();
 const cooldowns = new Discord.Collection();
 
 const anonymousDm = require("./model/anonymousDm.js");
+const anonymousHandler = require('./model/anonymousHandler');
 
 // get and set all commands
 const commandFiles = fs.readdirSync('./model/commands').filter(file => file.endsWith('.js'));

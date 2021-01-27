@@ -20,12 +20,22 @@ module.exports = {
         // get anonymous user id depending on the channel
         const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
 
+        if (anonymousHandler.blockedUsers[anonymousId] !== undefined) {
+            return message.reply(`This user is already banned\nReason : ${anonymousHandler.blockedUsers[anonymousId]}`);
+        }
+
+        // setup args
+        let strArgs = '';
+        if (args.length > 0) {
+            strArgs = args.join(' ').trim();
+        }
+
+        const reason = strArgs === '' ? "no reason provided" : strArgs;
+
         //TODO log in db
-        const reason = args === undefined ? "no reason provided" : args;
         // db.query(`INSERT INTO blocked_user VALUES ('${anonymousId}', reason)`);
         
         // log blocked user in memory
-
         anonymousHandler.blockedUsers[anonymousId] = reason;
 
         // get user id to dm, depending on the channel the message was sent

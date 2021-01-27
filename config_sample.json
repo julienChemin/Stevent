@@ -1,0 +1,21 @@
+{
+    "prefixe": "",
+    "token": "",
+
+    "guildSnowflake": "",
+    "dmCategorySnowflake":"",
+    "channelArchivesSnowflake":"",
+    "channelToPingForWarn":"",
+    "roleToPingForWarn":"",
+    "uniqueChannels":["", ""],
+
+    "emojiSuccessSnowflake":"",
+    "emojiFailureSnowflake":"",
+    "db": {
+        "host": "",
+        "user": "",
+        "password": "",
+        "database": "",
+        "charset": ""
+    }
+}

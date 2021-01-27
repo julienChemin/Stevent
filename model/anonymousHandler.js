@@ -1,10 +1,12 @@
 const Discord = require('discord.js');
 const { uniqueChannels } = require('../config.json');
+const { uniqueNamesGenerator, adjectives, colors, animals } = require('unique-names-generator');
 
 const anonymousHandler = {
     anonymousUsersId: {}, // user_id: anonymous_user_id
+    anonymousPseudos: {}, // anonymous_user_id: anonymous_pseudo
     anonymousChannels: {}, // anonymous_user_id: channel_id
-    blockedUsers: [], 
+    blockedUsers: {}, // blocked_anonymous_user_id: reason
 
     //TODO delete commentary under (query)
     /* init: () => {
@@ -64,13 +66,8 @@ const anonymousHandler = {
         return string += 'fake';
     },
 
-    orderChannel: async (category) => {
-        let incr = 1;
-        await category.children.filter(child => !uniqueChannels.includes(child.id)).each(child => {
-            child.setName(`anonymous_chan_${incr}`);
-            incr++;
-        });
-        return;
+    createRandomName: () => {
+        return uniqueNamesGenerator({ dictionaries: [adjectives, colors, animals] });
     }
 }
 module.exports = anonymousHandler;

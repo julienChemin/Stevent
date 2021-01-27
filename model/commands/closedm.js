@@ -1,6 +1,7 @@
 const fs = require("fs");
 const { dmCategorySnowflake, 
-    channelArchivesSnowflake } = require('../../config.json');
+    channelArchivesSnowflake,
+    archivesFolderPath } = require('../../config.json');
 const anonymousHandler = require("./../anonymousHandler.js");
 
 const writeFile = (filePath, fileContent) => {
@@ -33,10 +34,10 @@ module.exports = {
         const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
 
         // get all archives for this anonymous id
-        const archiveOfThisUser = fs.readdirSync('./util/archivesDm').filter(file => file.startsWith(anonymousId));
+        const archiveOfThisUser = fs.readdirSync(archivesFolderPath).filter(file => file.startsWith(anonymousId));
 
         message.channel.messages.fetch().then(async messages => {
-            const archiveFolderFilePath = `./util/archivesDm/${anonymousId}-${(archiveOfThisUser.length + 1)}.txt`;
+            const archiveFolderFilePath = `${archivesFolderPath}/${anonymousId}-${(archiveOfThisUser.length + 1)}.txt`;
             let fileContent = "";
             messages.array().reverse().map(msg => {
                 const username = msg.author.username === 'Stevent' ? "Anonymous user#???? aka User" : `${msg.author.tag} aka ${msg.author.username}`;
@@ -62,9 +63,7 @@ module.exports = {
                     attachment: filepath
                 }]
             }).then(() => {
-                message.channel.delete().then(() => {
-                    anonymousHandler.orderChannel(message.guild.channels.cache.get(dmCategorySnowflake));
-                });
+                message.channel.delete();
             }).catch(error => {
                 message.reply(`Can't delete or order the channels : ${error}`);
             });

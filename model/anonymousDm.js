@@ -2,9 +2,14 @@ const db = require('./db');
 const { guildSnowflake, 
     dmCategorySnowflake, 
     emojiSuccessSnowflake, 
-    emojiFailureSnowflake } = require('../config.json');
+    emojiFailureSnowflake,
+    channelToPingForWarn,
+    roleToPingForWarn } = require('../config.json');
 
 const anonymousHandler = require("./../model/anonymousHandler.js");
+const maxChannelByCategory = 50;
+const limiteAmountChannelBeforeWarning = Math.ceil((maxChannelByCategory * 60) / 100);
+const grade = "Modérateurs";
 
 const AnonymousDm = {
     receiveDm: async (client, message) => {
@@ -14,26 +19,37 @@ const AnonymousDm = {
         const emojiFailure = Guild.emojis.cache.get(emojiFailureSnowflake) !== undefined ? Guild.emojis.cache.get(emojiFailureSnowflake) : '💔';
 
         if (anonymousHandler.anonymousUsersId[message.author.id] === undefined) {
-            // first time this user dm anonymously -> create anonymous id
+            // first time this user dm anonymously -> create anonymous id + pseudo
             //TODO encrypter id
             const anonymousId = anonymousHandler.encrypting(message.author.id);
+            const randomPseudo = anonymousHandler.createRandomName();
 
-            //TODO log in db
+            //TODO log anonymous_user_id and random_user_name into db
             // db.query(`INSERT INTO anonymous_user VALUES ('${message.author.id}', '${anonymousId}')`);
+            // db.query(`INSERT INTO anonymous_pseudo VALUES ('${anonymousId}', '${pseudo}')`);
 
             // log in memory
             anonymousHandler.anonymousUsersId[message.author.id] = anonymousId;
+            anonymousHandler.anonymousPseudos[message.author.id] = anonymousId;
         }
         const anonymousUserId = anonymousHandler.anonymousUsersId[message.author.id];
+        const pseudo = anonymousHandler.anonymousPseudos[anonymousUserId];///////////////////// HERE
 
         if (anonymousHandler.blockedUsers[anonymousUserId] !== undefined) {
             // this user is blocked
             return message.channel.send(`You can't send private message anymore because you were blocked by the bot`);
         }
 
+        if ((anonymousCategory.children.size + 1) >= limiteAmountChannelBeforeWarning) {
+            // ping appropriate role to tell that the amount of channel is close to the max amount
+            const roleToPing = Guild.roles.cache.get(roleToPingForWarn);
+            const mention = roleToPing.toString();
+            Guild.channels.cache.get(channelToPingForWarn).send(`${mention}, il y a ${anonymousCategory.children.size}/${maxChannelByCategory} channels dans la catégorie "DM anonyme - ${grade}". Remerciez Lily pour le ping.`);
+        }
+
         if (anonymousHandler.anonymousChannels[anonymousUserId] === undefined) {
             // first time this user dm anonymously -> create an associated channel
-            const newChannelName = `anonymous_chan_${anonymousCategory.children.size}`;
+            const newChannelName = `${pseudo}${anonymousUserId.substr(0, 5)}`;
             const newChannelPosition = anonymousCategory.children.size === 0 ? null : anonymousCategory.children.last.rawPosition ;
             try {
                 //TODO overwrite permission to only modo or admin
@@ -43,8 +59,8 @@ const AnonymousDm = {
                     position: newChannelPosition
                 });
 
-                //TODO log in db
-                // db.query(`INSERT INTO anonymous_channel VALUES ('${anonymousId}', '${//channelId//}')`);
+                //TODO log anonymous_channel_id into db
+                // db.query(`INSERT INTO anonymous_channel VALUES ('${anonymousId}', '${channelId}')`);
 
                 // log in memory
                 anonymousHandler.anonymousChannels[anonymousUserId] = newChannel.id;
