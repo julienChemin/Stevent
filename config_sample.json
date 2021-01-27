@@ -17,5 +17,7 @@
         "password": "",
         "database": "",
         "charset": ""
-    }
+    },
+
+    "archivesFolderPath": "./util/archivesDm"
 }
