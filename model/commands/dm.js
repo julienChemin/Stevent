@@ -44,7 +44,7 @@ module.exports = {
         // take off ".dm " from the message content before sending it
         const messageContent = message.content.substr(3);
 
-        userToRespond.send(anonymousHandler.getEmbed(messageContent, message.author))
+        userToRespond.send(anonymousHandler.getEmbed(messageContent, message.author.username, message.author))
             .then(() => {
                 message.react(emojiSuccess);
             }).catch(() => {

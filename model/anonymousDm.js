@@ -7,6 +7,7 @@ const { guildSnowflake,
     roleToPingForWarn } = require('../config.json');
 
 const anonymousHandler = require("./../model/anonymousHandler.js");
+const { anonymousPseudos } = require('./../model/anonymousHandler.js');
 const maxChannelByCategory = 50;
 const limiteAmountChannelBeforeWarning = Math.ceil((maxChannelByCategory * 60) / 100);
 const grade = "Modérateurs";
@@ -30,10 +31,10 @@ const AnonymousDm = {
 
             // log in memory
             anonymousHandler.anonymousUsersId[message.author.id] = anonymousId;
-            anonymousHandler.anonymousPseudos[message.author.id] = anonymousId;
+            anonymousHandler.anonymousPseudos[anonymousId] = randomPseudo;
         }
         const anonymousUserId = anonymousHandler.anonymousUsersId[message.author.id];
-        const pseudo = anonymousHandler.anonymousPseudos[anonymousUserId];///////////////////// HERE
+        const pseudo = anonymousHandler.anonymousPseudos[anonymousUserId];
 
         if (anonymousHandler.blockedUsers[anonymousUserId] !== undefined) {
             // this user is blocked
@@ -78,7 +79,7 @@ const AnonymousDm = {
         }
 
         // embed the dm to post it on the anonymous channel
-        anonymousChannel.send(anonymousHandler.getEmbed(message.content))
+        anonymousChannel.send(anonymousHandler.getEmbed(message.content, pseudo))
             .then(() => {
                 message.react(emojiSuccess);
             }).catch(() => {

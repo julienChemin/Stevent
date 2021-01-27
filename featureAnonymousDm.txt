@@ -1,0 +1,22 @@
+concerned files :
+    -> bot.js
+    -> config.json
+    -> model/anonymousHandler.js
+    -> model/anonymousDm.js
+    -> model/commands/closeDm.js
+    -> model/commands/dm.js
+    -> model/commands/ignore.js
+
+tables
+    anonymous_user
+        -> user_id
+        -> anonymous_user_id
+    anonymous_channel
+        -> anonymous_user_id
+        -> channel_id
+    blocked_user
+        -> anonymous_user_id
+        -> reason
+
+also
+    -> npm install unique-names-generator

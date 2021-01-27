@@ -21,7 +21,7 @@ module.exports = {
         const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
 
         if (anonymousHandler.blockedUsers[anonymousId] !== undefined) {
-            return message.reply(`This user is already banned\nReason : ${anonymousHandler.blockedUsers[anonymousId]}`);
+            return message.reply(`This user is already blocked\nReason : ${anonymousHandler.blockedUsers[anonymousId]}`);
         }
 
         // setup args

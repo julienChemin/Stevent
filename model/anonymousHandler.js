@@ -8,7 +8,7 @@ const anonymousHandler = {
     anonymousChannels: {}, // anonymous_user_id: channel_id
     blockedUsers: {}, // blocked_anonymous_user_id: reason
 
-    //TODO delete commentary under (query)
+    //TODO delete init commentary - fill up each constante
     /* init: () => {
         return new Promise((resolve, reject) => {
             db.query('SELECT user_id, anonymous_user_id FROM anonymous_user').on('result', row => {
@@ -46,17 +46,17 @@ const anonymousHandler = {
         return undefined;
     },
 
-    getEmbed: (messageContent, author = null) => {
+    getEmbed: (messageContent, username, author = null) => {
         // author = null mean anonymous dm
         const embed = new Discord.MessageEmbed()
             .setColor('#0099ff')
             .addField('Message', messageContent);
     
         if (author !== null) {
-            embed.setAuthor(`${author.tag} aka ${author.username}`, author.avatarURL());
+            embed.setAuthor(`${author.tag} aka ${username}`, author.avatarURL());
         } else {
-            embed.setAuthor(`Anonyme user`)
-                .setFooter("Use !closedm to end this conversation and close the channel");
+            embed.setAuthor(username)
+                .setFooter("!closedm to end this conversation and close the channel.\n!ignore <reason> to block this user");
         }
     
         return embed;

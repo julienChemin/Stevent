@@ -40,7 +40,7 @@ module.exports = {
             const archiveFolderFilePath = `${archivesFolderPath}/${anonymousId}-${(archiveOfThisUser.length + 1)}.txt`;
             let fileContent = "";
             messages.array().reverse().map(msg => {
-                const username = msg.author.username === 'Stevent' ? "Anonymous user#???? aka User" : `${msg.author.tag} aka ${msg.author.username}`;
+                const username = msg.author.username === 'Stevent' ? msg.embeds[0].author.name : `${msg.author.tag} aka ${msg.author.username}`;
                 let content = '';
                 if (msg.content !== '') {
                     content = msg.content;
