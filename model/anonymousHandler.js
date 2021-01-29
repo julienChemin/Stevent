@@ -56,6 +56,10 @@ const anonymousHandler = {
         return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET channel_id = '${channelId}' WHERE anonymous_user_id = '${anonymousUserId}'`);
     },
 
+    unsetAnonymousChannel: async (anonymousUserId) => {
+        return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET channel_id = null WHERE anonymous_user_id = '${anonymousUserId}'`);
+    },
+
     ignoreUser: async (anonymousUserId, reason) => {
         return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET is_blocked = 1, blocking_reason = '${reason}' WHERE anonymous_user_id = '${anonymousUserId}'`);
     },

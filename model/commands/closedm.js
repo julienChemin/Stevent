@@ -32,22 +32,17 @@ module.exports = {
         const archivesChannel = anonymousCategory.children.get(channelArchivesSnowflake);   
 
         // get anonymous user id depending on the channel, and anonymous pseudo
-        const anonymousId = await anonymousHandler.getIdByChannel(message.channel.id, false).catch(error => {
+        const anonymousUserId = await anonymousHandler.getIdByChannel(message.channel.id, false).catch(error => {
             console.error(`Can't find anonymous id \nError : ${error}`);
         });
-        const pseudo = await anonymousHandler.getPseudo(anonymousId).catch(error => {
+        const pseudo = await anonymousHandler.getPseudo(anonymousUserId).catch(error => {
             console.error(`Can't find user's pseudo : ${error}`);
         });
 
-        // prevent an impossible error
-        if (anonymousId === undefined || pseudo === undefined) {
-            return message.reply(`Can't find the channel to delete OR the anonymous pseudo for this user... check the bdd !`);
-        }
-
-        const fullPseudo = `${pseudo}${anonymousId.substr(0, 5)}`;
+        const fullPseudo = `${pseudo}${anonymousUserId.substr(0, 5)}`;
 
         // get all archives for this anonymous id
-        const archiveOfThisUser = fs.readdirSync(archivesFolderPath).filter(file => file.startsWith(anonymousId));
+        const archiveOfThisUser = fs.readdirSync(archivesFolderPath).filter(file => file.startsWith(fullPseudo));
 
         message.channel.messages.fetch().then(async messages => {
             const archiveFolderFilePath = `${archivesFolderPath}/${fullPseudo}-${(archiveOfThisUser.length + 1)}.txt`;
@@ -75,8 +70,12 @@ module.exports = {
                 files:[{
                     attachment: filepath
                 }]
-            }).then(() => {
+            }).then(async () => {
                 message.channel.delete();
+                // set channel_id to null into db
+                return await anonymousHandler.unsetAnonymousChannel(anonymousUserId).catch(error => {
+                    console.error(`Can't set a new anonymous channel \nError : ${error}`);
+                });
             }).catch(error => {
                 message.reply(`Can't delete or order the channels : ${error}`);
             });
