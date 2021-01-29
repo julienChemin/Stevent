@@ -1,8 +1,8 @@
 const fs = require("fs");
-const { dmCategorySnowflake, 
+const { uniqueChannels,
+    dmCategorySnowflake, 
     channelArchivesSnowflake,
     archivesFolderPath } = require('../../config.json');
-const { anonymousPseudos } = require("./../anonymousHandler.js");
 const anonymousHandler = require("./../anonymousHandler.js");
 
 const writeFile = (filePath, fileContent) => {
@@ -24,16 +24,20 @@ module.exports = {
     description: 'Close an anonymousDm channel and archive discussion. Depend on the anonymous channel where you use that command. Work only on anonymous channel.',
     usage: '<(string) command name>',
     guildOnly: true,
-    snowflakeCategory: dmCategorySnowflake,
-    forbiddenChannel: [channelArchivesSnowflake],
+    categoryOnly: dmCategorySnowflake,
+    forbiddenChannel: uniqueChannels,
     cooldown: 3,
-    execute(client, message, args) {
+    execute: async (client, message, args) => {
         const anonymousCategory = message.guild.channels.cache.get(dmCategorySnowflake);
         const archivesChannel = anonymousCategory.children.get(channelArchivesSnowflake);   
 
         // get anonymous user id depending on the channel, and anonymous pseudo
-        const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
-        const pseudo = anonymousHandler.getPseudo(anonymousId);
+        const anonymousId = await anonymousHandler.getIdByChannel(message.channel.id, false).catch(error => {
+            console.error(`Can't find anonymous id \nError : ${error}`);
+        });
+        const pseudo = await anonymousHandler.getPseudo(anonymousId).catch(error => {
+            console.error(`Can't find user's pseudo : ${error}`);
+        });
 
         // prevent an impossible error
         if (anonymousId === undefined || pseudo === undefined) {
@@ -64,7 +68,7 @@ module.exports = {
                 fileContent += `____ ____ ____ ____ ____ ____ ____ ____ \n\n`;
             });
             const filepath = await writeFile(archiveFolderFilePath, fileContent).catch(error => {
-                message.reply(`Look like i can't set the archive .. \n Error : ${error}`);
+                message.reply(`Look like i can't set the archive \nError : ${error}`);
             });
 
             archivesChannel.send(`\n Archive ${fullPseudo}-${(archiveOfThisUser.length + 1)} \n`, {

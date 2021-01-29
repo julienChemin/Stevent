@@ -1,6 +1,6 @@
 const { guildSnowflake, 
     dmCategorySnowflake, 
-    channelArchivesSnowflake, 
+    uniqueChannels, 
     emojiSuccessSnowflake, 
     emojiFailureSnowflake } = require('../../config.json');
 const anonymousHandler = require("./../anonymousHandler.js");
@@ -10,10 +10,10 @@ module.exports = {
     description: 'Dm an anonymous user. User depend on the anonymous channel where you use that command. Work only on anonymous channel.',
     usage: '<(string) command name, (string) message>',
     guildOnly: true,
-    snowflakeCategory: dmCategorySnowflake,
-    forbiddenChannel: [channelArchivesSnowflake],
+    categoryOnly: dmCategorySnowflake,
+    forbiddenChannel: uniqueChannels,
     cooldown: 0,
-    execute: (client, message, args) => {
+    execute: async (client, message, args) => {
         const Guild = client.guilds.cache.get(guildSnowflake);
         const anonymousCategory = Guild.channels.cache.get(dmCategorySnowflake);
         const emojiSuccess = Guild.emojis.cache.get(emojiSuccessSnowflake) !== undefined ? Guild.emojis.cache.get(emojiSuccessSnowflake) : '💜';
@@ -25,23 +25,29 @@ module.exports = {
         }
 
         // get user id to dm, depending on the channel the message was sent
-        const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
-        const idToDm = anonymousHandler.getIdByChannel(message.channel.id);
-        
-        if (idToDm === undefined) {
-            message.reply(`Sorry, i can't find this user`);
-            console.error("Can't find the Id to respond to this anonyme user");
-            return;
-        }
+        const anonymousId = await anonymousHandler.getIdByChannel(message.channel.id, false).catch(error => {
+            console.error(`Can't find anonymous id \nError : ${error}`);
+        });
 
-        if (anonymousHandler.blockedUsers[anonymousId] !== undefined) {
-            return message.reply(`Can't Dm this user, she/he is blocked\nReason : ${anonymousHandler.blockedUsers[anonymousId]}`);
+        const idToDm = await anonymousHandler.getIdByChannel(message.channel.id).catch(error => {
+            console.error(`Can't find user id \nError : ${error}`);
+        });
+
+        const blockedUser = await anonymousHandler.isBlocked(anonymousId);
+        if (blockedUser.isBlocked) {
+            // this user is blocked
+            return message.reply(`Can't Dm this user, she/he is blocked \nReason : ${blockedUser.reason}`);
         }
 
         // get user with his Id
+        //TODO si j'ouvre une conv anonyme, puis que je stop le bot et le relance, et que j'essaie de repondre au dm, grosse erreur l'user n'est pas trouvable dans le cache
         const userToRespond = client.users.cache.get(idToDm);
+        if (userToRespond === undefined) {
+            return message.reply(`Can't find this user in the cache`);
+        }
 
         // take off ".dm " from the message content before sending it
+        //TODO maybe better to substr prefixe then command.name
         const messageContent = message.content.substr(3);
 
         userToRespond.send(anonymousHandler.getEmbed(messageContent, message.author.username, message.author))

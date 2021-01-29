@@ -2,6 +2,8 @@
     "prefixe": "",
     "token": "",
 
+    "archivesFolderPath": "./util/archivesDm",
+
     "guildSnowflake": "",
     "dmCategorySnowflake":"",
     "channelArchivesSnowflake":"",
@@ -19,5 +21,6 @@
         "charset": ""
     },
 
-    "archivesFolderPath": "./util/archivesDm"
+    "prefixe_table": "",
+    "table_anonymous_user": ""
 }

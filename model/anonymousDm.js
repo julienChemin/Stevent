@@ -1,16 +1,14 @@
-const db = require('./db');
 const { guildSnowflake, 
     dmCategorySnowflake, 
     emojiSuccessSnowflake, 
     emojiFailureSnowflake,
     channelToPingForWarn,
-    roleToPingForWarn } = require('../config.json');
+    roleToPingForWarn,
+    prefixe_table } = require('../config.json');
 
 const anonymousHandler = require("./../model/anonymousHandler.js");
-const { anonymousPseudos } = require('./../model/anonymousHandler.js');
 const maxChannelByCategory = 50;
 const limiteAmountChannelBeforeWarning = Math.ceil((maxChannelByCategory * 60) / 100);
-const grade = "Modérateurs";
 
 const AnonymousDm = {
     receiveDm: async (client, message) => {
@@ -25,18 +23,21 @@ const AnonymousDm = {
             const anonymousId = anonymousHandler.encrypting(message.author.id);
             const randomPseudo = anonymousHandler.createRandomName();
 
-            //TODO log anonymous_user_id and random_user_name into db
-            // db.query(`INSERT INTO anonymous_user VALUES ('${message.author.id}', '${anonymousId}')`);
-            // db.query(`INSERT INTO anonymous_pseudo VALUES ('${anonymousId}', '${pseudo}')`);
-
-            // log in memory
+            // log anonymous_user (id / anonymous_id / pseudo) into db and memory
+            await anonymousHandler.setAnonymousUser(message.author.id, anonymousId, randomPseudo).catch(error => {
+                console.error(`Can't set a new anonymous user \nError : ${error}`);
+            });
             anonymousHandler.anonymousUsersId[message.author.id] = anonymousId;
-            anonymousHandler.anonymousPseudos[anonymousId] = randomPseudo;
         }
-        const anonymousUserId = anonymousHandler.anonymousUsersId[message.author.id];
-        const pseudo = anonymousHandler.getPseudo(anonymousUserId);
 
-        if (anonymousHandler.blockedUsers[anonymousUserId] !== undefined) {
+        // log anonymous_user (id / anonymous_id) into  memory
+        const anonymousUserId = anonymousHandler.anonymousUsersId[message.author.id];
+        const pseudo = await anonymousHandler.getPseudo(anonymousUserId).catch(error => {
+            console.error(`Can't find user's pseudo : ${error}`);
+        });
+
+        const {isBlocked} = await anonymousHandler.isBlocked(anonymousUserId);
+        if (isBlocked) {
             // this user is blocked
             return message.channel.send(`You can't send private message anymore because you were blocked by the bot`);
         }
@@ -45,11 +46,14 @@ const AnonymousDm = {
             // ping appropriate role to tell that the amount of channel is close to the max amount
             const roleToPing = Guild.roles.cache.get(roleToPingForWarn);
             const mention = roleToPing.toString();
-            Guild.channels.cache.get(channelToPingForWarn).send(`${mention}, il y a ${anonymousCategory.children.size}/${maxChannelByCategory} channels dans la catégorie "DM anonyme - ${grade}". Remerciez Lily pour le ping.`);
+            Guild.channels.cache.get(channelToPingForWarn).send(`${mention}, il y a ${anonymousCategory.children.size}/${maxChannelByCategory} channels dans la catégorie "DM anonyme - ${prefixe_table}". Remerciez Lily pour le ping.`);
         }
 
-        if (anonymousHandler.anonymousChannels[anonymousUserId] === undefined) {
-            // first time this user dm anonymously -> create an associated channel
+        let anonymousChannelId = await anonymousHandler.getChannelId(anonymousUserId).catch(error => {
+            console.error(`Can't find anonymous channel id \nError : ${error}`);
+        });
+        if (!anonymousChannelId) {
+            // this user don't have an anonymous channel open -> create that channel
             const newChannelName = `${pseudo}${anonymousUserId.substr(0, 5)}`;
             const newChannelPosition = anonymousCategory.children.size === 0 ? null : anonymousCategory.children.last.rawPosition ;
             try {
@@ -60,20 +64,19 @@ const AnonymousDm = {
                     position: newChannelPosition
                 });
 
-                //TODO log anonymous_channel_id into db
-                // db.query(`INSERT INTO anonymous_channel VALUES ('${anonymousId}', '${channelId}')`);
-
-                // log in memory
-                anonymousHandler.anonymousChannels[anonymousUserId] = newChannel.id;
+                // log channel_id into db
+                await anonymousHandler.setAnonymousChannel(anonymousUserId, newChannel.id).catch(error => {
+                    console.error(`Can't set a new anonymous channel \nError : ${error}`);
+                });
+                anonymousChannelId = newChannel.id;
             } catch (error) {
                 console.error(`Can't create new channel : ${error}`);
             }
         }
-        const anonymousChannelId = anonymousHandler.anonymousChannels[anonymousUserId];
         const anonymousChannel = anonymousCategory.children.get(anonymousChannelId);
 
         if (anonymousChannel === undefined) {
-            //TODO might be a better way to handle this error, idk
+            //TODO might be a better way to handle this impossible error, idk
             console.error(`can't found the channel previously create on the anonymeDm channel`);
             return;
         }

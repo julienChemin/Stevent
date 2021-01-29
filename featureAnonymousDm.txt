@@ -11,10 +11,13 @@ tables
     anonymous_user
         -> user_id
         -> anonymous_user_id
+    anonymous_pseudo
+        -> anonymous_user_id
+        -> anonymous_pseudo
     anonymous_channel
         -> anonymous_user_id
         -> channel_id
-    blocked_user
+    anonymous_blocked_user
         -> anonymous_user_id
         -> reason
 

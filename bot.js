@@ -7,6 +7,7 @@ const { prefixe,
 
 const client = new Discord.Client();
 client.commands = new Discord.Collection();
+let Guild = null;
 const cooldowns = new Discord.Collection();
 
 const anonymousDm = require("./model/anonymousDm.js");
@@ -21,16 +22,18 @@ for (const file of commandFiles) {
 }
 
 // client is ready
-client.once('ready', () => {
-    //TODO delete commentary of init()
-    //anonymousDm.init();
-    console.log("Ready.");
+client.once('ready',() => {
+    anonymousHandler.init().then(() => {
+        console.log("Ready.");
+    }).catch(error => {
+        console.error(`Client not ready : ${error}`);
+    });
+    
+    Guild = client.guilds.cache.get(guildSnowflake);
 });
 
 // on message
 client.on('message', message => {
-    //TODO guild is charged at each message, might be a better way (how to wait for the client.on(ready) to attribute the value?)
-    const Guild = client.guilds.cache.get(guildSnowflake);
     if (message.author.bot) {
         // -- message from the bot --
         return;
@@ -56,7 +59,7 @@ client.on('message', message => {
         if (command.dmOnly && message.channel.type === 'text') {
             return message.reply('dude, this is private ! ask me in Dm..');
         }
-        if (command.snowflakeCategory !== undefined && Guild.channels.cache.get(command.snowflakeCategory).children.get(message.channel.id) === undefined) {
+        if (command.categoryOnly !== undefined && Guild.channels.cache.get(command.categoryOnly).children.get(message.channel.id) === undefined) {
             return message.reply(`This is not the right place to use this command. Use !help ${command.name} for more info`);
         }
 

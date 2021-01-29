@@ -1,5 +1,6 @@
 const { dmCategorySnowflake, 
-    channelArchivesSnowflake } = require('../../config.json');
+    channelArchivesSnowflake,
+    uniqueChannels } = require('../../config.json');
 const anonymousHandler = require("./../anonymousHandler.js");
 
 module.exports = {
@@ -8,20 +9,23 @@ module.exports = {
     description: 'prevent an user to dm the bot. Blocked user depend on the anonymous channel where you use that command. Work only on anonymous channel.',
     usage: '<(string) command name, [(string) reason]>',
     guildOnly: true,
-    snowflakeCategory: dmCategorySnowflake,
-    forbiddenChannel: [channelArchivesSnowflake],
+    categoryOnly: dmCategorySnowflake,
+    forbiddenChannel: uniqueChannels,
     cooldown: 5,
-    execute(client, message, args) {
+    execute: async (client, message, args) => {
         if (message.channel.id === channelArchivesSnowflake) {
             // avoid the "archives" channel
             return;
         }
 
         // get anonymous user id depending on the channel
-        const anonymousId = anonymousHandler.getIdByChannel(message.channel.id, false);
+        const anonymousId = await anonymousHandler.getIdByChannel(message.channel.id, false).catch(error => {
+            console.error(`Can't find anonymous id \nError : ${error}`);
+        });
 
-        if (anonymousHandler.blockedUsers[anonymousId] !== undefined) {
-            return message.reply(`This user is already blocked\nReason : ${anonymousHandler.blockedUsers[anonymousId]}`);
+        const blockedUser = await anonymousHandler.isBlocked(anonymousId);
+        if (blockedUser.isBlocked) {
+            return message.reply(`This user is already blocked \nReason : ${blockedUser.reason}`);
         }
 
         // setup args
@@ -29,32 +33,29 @@ module.exports = {
         if (args.length > 0) {
             strArgs = args.join(' ').trim();
         }
-
         const reason = strArgs === '' ? "no reason provided" : strArgs;
 
-        //TODO log in db
-        // db.query(`INSERT INTO blocked_user VALUES ('${anonymousId}', reason)`);
-        
-        // log blocked user in memory
-        anonymousHandler.blockedUsers[anonymousId] = reason;
+        // log blocked user in db
+        await anonymousHandler.ignoreUser(anonymousId, reason).catch(error => {
+            console.error(`Can't ignore this user \nError : ${error}`);
+        });
 
         // get user id to dm, depending on the channel the message was sent
-        const idToDm = anonymousHandler.getIdByChannel(message.channel.id);
-        
-        if (idToDm === undefined) {
-            message.reply(`Sorry, i can't find this user`);
-            console.error("Can't find the Id to respond to this anonyme user");
-            return;
-        }
+        const idToDm = anonymousHandler.getIdByChannel(message.channel.id).catch(error => {
+            console.error(`Can't find user id \nError : ${error}`);
+        });
 
         // get user with his Id
         const userToRespond = client.users.cache.get(idToDm);
+        if (userToRespond === undefined) {
+            return message.reply(`Can't find this user in the cache`);
+        }
 
         // tell to the user that she/he is blocked
         userToRespond.send(`You can't send private message anymore because you were blocked by the bot`).then(() => {
             message.channel.send(`User blocked succcesssfullly`);
         }).catch(error => {
-            message.channel.send(`I can't block this user.. reason : ${error}`);
+            message.channel.send(`I can't DM this user to tell that she/he is blocked \nReason : ${error}`);
         });
     }
 }

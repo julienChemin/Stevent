@@ -1,53 +1,67 @@
+const db = require('./db');
 const Discord = require('discord.js');
-const { uniqueChannels } = require('../config.json');
+const { prefixe_table,
+    table_anonymous_user } = require('../config.json');
+const table_anonymous_with_prefixe = `${prefixe_table}${table_anonymous_user}`;
 const { uniqueNamesGenerator, adjectives, colors, animals } = require('unique-names-generator');
 
 const anonymousHandler = {
     anonymousUsersId: {}, // user_id: anonymous_user_id
-    anonymousPseudos: {}, // anonymous_user_id: anonymous_pseudo
-    anonymousChannels: {}, // anonymous_user_id: channel_id
-    blockedUsers: {}, // blocked_anonymous_user_id: reason
 
-    //TODO delete init commentary - fill up each constante
-    /* init: () => {
+    init: () => {
         return new Promise((resolve, reject) => {
-            db.query('SELECT user_id, anonymous_user_id FROM anonymous_user').on('result', row => {
+            db.query(`SELECT user_id, anonymous_user_id FROM ${table_anonymous_with_prefixe}`).on('result', row => {
                 anonymousHandler.anonymousUsersId[row.user_id] = row.anonymous_user_id;
             }).on('error', (error) => {
-                reject(`Error loading AnonymousDm: ${error}`);
+                reject(`Error while initializing AnonymousDm: ${error}`);
             }).on('end', resolve);
         });
-    }, */
+    },
 
-    getIdByChannel: (channelId, trueId = true) => {
-        const arrKey = Object.keys(anonymousHandler.anonymousChannels);
-        const arrChannel = Object.values(anonymousHandler.anonymousChannels);
-        
-        for (let i = 0; i < arrChannel.length; i++) {
-            if (arrChannel[i] === channelId) {
-                if (trueId) {
-                    return anonymousHandler.getUserIdByAnonymousId(arrKey[i]);
-                }
-                return arrKey[i];
-            }
+    getChannelId: async (anonymousUserId) => {
+        const result = await db.asyncQuery(`SELECT channel_id FROM ${table_anonymous_with_prefixe} WHERE anonymous_user_id = '${anonymousUserId}'`);
+
+        if (result === undefined) {
+            return false;
+        } else {
+            return result.channel_id;
         }
-        return undefined;
+    },
+
+    getIdByChannel: async (channelId, trueId = true) => {
+        const result = await db.asyncQuery(`SELECT anonymous_user_id FROM ${table_anonymous_with_prefixe} WHERE channel_id = '${channelId}'`);
+
+        if (!trueId) {
+            return result.anonymous_user_id;
+        } else {
+            return anonymousHandler.getUserIdByAnonymousId(result.anonymous_user_id);
+        }
     },
     
-    getUserIdByAnonymousId: (anonymousUserId) => {
-        const arrKey = Object.keys(anonymousHandler.anonymousUsersId);
-        const arrUser = Object.values(anonymousHandler.anonymousUsersId);
-        
-        for (let i = 0; i < arrUser.length; i++) {
-            if (arrUser[i] === anonymousUserId) {
-                return arrKey[i];
-            }
-        }
-        return undefined;
+    getUserIdByAnonymousId: async (anonymousUserId) => {
+        const result = await db.asyncQuery(`SELECT user_id FROM ${table_anonymous_with_prefixe} WHERE anonymous_user_id = '${anonymousUserId}'`);
+        return result.user_id;
     },
 
-    getPseudo: (anonymousUserId) => {
-        return anonymousHandler.anonymousPseudos[anonymousUserId];
+    getPseudo: async (anonymousUserId) => {
+        const result = await db.asyncQuery(`SELECT anonymous_pseudo FROM ${table_anonymous_with_prefixe} WHERE anonymous_user_id = '${anonymousUserId}'`);
+        return result.anonymous_pseudo;
+    },
+
+    setAnonymousUser: async (userId, anonymousUserId, pseudo) => {
+        return await db.asyncQuery(`INSERT INTO ${table_anonymous_with_prefixe} (user_id, anonymous_user_id, anonymous_pseudo) VALUES ('${userId}', '${anonymousUserId}', '${pseudo}')`);
+    },
+
+    setAnonymousChannel: async (anonymousUserId, channelId) => {
+        return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET channel_id = '${channelId}' WHERE anonymous_user_id = '${anonymousUserId}'`);
+    },
+
+    ignoreUser: async (anonymousUserId, reason) => {
+        return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET is_blocked = 1, blocking_reason = '${reason}' WHERE anonymous_user_id = '${anonymousUserId}'`);
+    },
+
+    isBlocked: async (anonymousUserId) => {
+        return await db.asyncQuery(`SELECT is_blocked, blocking_reason FROM ${table_anonymous_with_prefixe} WHERE anonymous_user_id = '${anonymousUserId}'`);
     },
 
     getEmbed: (messageContent, username, author = null) => {
