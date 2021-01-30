@@ -1,3 +1,4 @@
+const Discord = require('discord.js');
 const { guildSnowflake, 
     dmCategorySnowflake, 
     uniqueChannels, 
@@ -14,6 +15,10 @@ module.exports = {
     forbiddenChannel: uniqueChannels,
     cooldown: 0,
     execute: async (client, message, args) => {
+        if (args.length < 1) {
+            return;
+        }
+
         const Guild = client.guilds.cache.get(guildSnowflake);
         const anonymousCategory = Guild.channels.cache.get(dmCategorySnowflake);
         const emojiSuccess = Guild.emojis.cache.get(emojiSuccessSnowflake) !== undefined ? Guild.emojis.cache.get(emojiSuccessSnowflake) : '💜';
@@ -34,28 +39,32 @@ module.exports = {
         });
 
         const blockedUser = await anonymousHandler.isBlocked(anonymousId);
-        if (blockedUser.isBlocked) {
+        if (blockedUser.is_blocked) {
             // this user is blocked
-            return message.reply(`Can't Dm this user, she/he is blocked \nReason : ${blockedUser.reason}`);
+            return message.reply(`Can't Dm this user, she/he is blocked \nReason : ${blockedUser.blocking_reason}`);
         }
 
         // get user with his Id
         //TODO si j'ouvre une conv anonyme, puis que je stop le bot et le relance, et que j'essaie de repondre au dm, grosse erreur l'user n'est pas trouvable dans le cache
-        const userToRespond = client.users.cache.get(idToDm);
-        if (userToRespond === undefined) {
+        const userToRespond = await client.users.fetch(idToDm).catch(error => {
+            console.error(`Can't find this user \nError : ${error}`);
             return message.reply(`Can't find this user in the cache`);
-        }
+        });
 
         // take off ".dm " from the message content before sending it
         //TODO maybe better to substr prefixe then command.name
         const messageContent = message.content.substr(3);
 
-        userToRespond.send(anonymousHandler.getEmbed(messageContent, message.author.username, message.author))
-            .then(() => {
-                message.react(emojiSuccess);
-            }).catch(() => {
-                message.react(emojiFailure);
-                message.reply(`I can't Dm this user`);
-            });
+        userToRespond.send({
+            embed: anonymousHandler.getEmbed(messageContent, message.author.username, message.author),
+            files: message.attachments.map(messageAttachment => {
+                return new Discord.MessageAttachment(messageAttachment.url, messageAttachment.filename);
+            })
+        }).then(() => {
+            message.react(emojiSuccess);
+        }).catch(() => {
+            message.react(emojiFailure);
+            message.reply(`I can't Dm this user`);
+        });
     }
 }

@@ -4,7 +4,7 @@ const { dmCategorySnowflake,
 const anonymousHandler = require("./../anonymousHandler.js");
 
 module.exports = {
-    name: 'ignore',
+    name: 'block',
     aliases: ['rekt'],
     description: 'prevent an user to dm the bot. Blocked user depend on the anonymous channel where you use that command. Work only on anonymous channel.',
     usage: '<(string) command name, [(string) reason]>',
@@ -24,38 +24,37 @@ module.exports = {
         });
 
         const blockedUser = await anonymousHandler.isBlocked(anonymousId);
-        if (blockedUser.isBlocked) {
-            return message.reply(`This user is already blocked \nReason : ${blockedUser.reason}`);
+        if (blockedUser.is_blocked) {
+            return message.reply(`This user is already blocked \nReason : ${blockedUser.blocking_reason}`);
         }
 
         // setup args
-        let strArgs = '';
+        let reason = 'no reason provided';
         if (args.length > 0) {
-            strArgs = args.join(' ').trim();
+            reason = args.join(' ').trim();
         }
-        const reason = strArgs === '' ? "no reason provided" : strArgs;
 
-        // log blocked user in db
-        await anonymousHandler.ignoreUser(anonymousId, reason).catch(error => {
-            console.error(`Can't ignore this user \nError : ${error}`);
+        // set is_blocked as true
+        await anonymousHandler.blockUser(anonymousId, reason).catch(error => {
+            console.error(`Can't block this user \nError : ${error}`);
         });
 
         // get user id to dm, depending on the channel the message was sent
-        const idToDm = anonymousHandler.getIdByChannel(message.channel.id).catch(error => {
+        const idToDm = await anonymousHandler.getIdByChannel(message.channel.id).catch(error => {
             console.error(`Can't find user id \nError : ${error}`);
         });
 
         // get user with his Id
-        const userToRespond = client.users.cache.get(idToDm);
-        if (userToRespond === undefined) {
-            return message.reply(`Can't find this user in the cache`);
-        }
+        const userToRespond = await client.users.fetch(idToDm).catch(error => {
+            console.error(`Can't find this user \nError : ${error}`);
+            return message.reply(`Can't find this user`);
+        });
 
         // tell to the user that she/he is blocked
         userToRespond.send(`You can't send private message anymore because you were blocked by the bot`).then(() => {
-            message.channel.send(`User blocked succcesssfullly`);
+            return message.channel.send(`User succcesssfullly blocked`);
         }).catch(error => {
-            message.channel.send(`I can't DM this user to tell that she/he is blocked \nReason : ${error}`);
+            return message.channel.send(`I can't DM this user to tell that she/he is blocked \nError : ${error}`);
         });
     }
 }

@@ -37,6 +37,11 @@ const anonymousHandler = {
             return anonymousHandler.getUserIdByAnonymousId(result.anonymous_user_id);
         }
     },
+
+    getAnonymousIdByUserId: async (userId) => {
+        const result = await db.asyncQuery(`SELECT anonymous_user_id FROM ${table_anonymous_with_prefixe} WHERE user_id = '${userId}'`);
+        return result.anonymous_user_id;
+    },
     
     getUserIdByAnonymousId: async (anonymousUserId) => {
         const result = await db.asyncQuery(`SELECT user_id FROM ${table_anonymous_with_prefixe} WHERE anonymous_user_id = '${anonymousUserId}'`);
@@ -60,8 +65,19 @@ const anonymousHandler = {
         return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET channel_id = null WHERE anonymous_user_id = '${anonymousUserId}'`);
     },
 
-    ignoreUser: async (anonymousUserId, reason) => {
+    blockUser: async (anonymousUserId, reason) => {
         return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET is_blocked = 1, blocking_reason = '${reason}' WHERE anonymous_user_id = '${anonymousUserId}'`);
+    },
+
+    unblockUser: async (id) => {
+        const regex = /\d{16,19}$/u;//TODO j'ai ajouté "$" au regex pour qu'il passe le test ici car avec le faux encryptage de l'id => (id anonyme = id + "fake")
+        if (regex.test(id)) {
+            // user_id
+            return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET is_blocked = 0, blocking_reason = null WHERE user_id = '${id}'`);
+        } else {
+            // anonymous_user_id
+            return await db.asyncQuery(`UPDATE ${table_anonymous_with_prefixe} SET is_blocked = 0, blocking_reason = null WHERE anonymous_user_id = '${id}'`);
+        }
     },
 
     isBlocked: async (anonymousUserId) => {
@@ -72,7 +88,7 @@ const anonymousHandler = {
         // author = null mean anonymous dm
         const embed = new Discord.MessageEmbed()
             .setColor('#0099ff')
-            .addField('Message', messageContent);
+            .setDescription(messageContent);
     
         if (author !== null) {
             embed.setAuthor(`${author.tag} aka ${username}`, author.avatarURL());

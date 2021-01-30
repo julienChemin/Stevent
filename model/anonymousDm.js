@@ -1,3 +1,4 @@
+const Discord = require('discord.js');
 const { guildSnowflake, 
     dmCategorySnowflake, 
     emojiSuccessSnowflake, 
@@ -36,8 +37,8 @@ const AnonymousDm = {
             console.error(`Can't find user's pseudo : ${error}`);
         });
 
-        const {isBlocked} = await anonymousHandler.isBlocked(anonymousUserId);
-        if (isBlocked) {
+        const {is_blocked} = await anonymousHandler.isBlocked(anonymousUserId);
+        if (is_blocked) {
             // this user is blocked
             return message.channel.send(`You can't send private message anymore because you were blocked by the bot`);
         }
@@ -82,13 +83,17 @@ const AnonymousDm = {
         }
 
         // embed the dm to post it on the anonymous channel
-        anonymousChannel.send(anonymousHandler.getEmbed(message.content, pseudo))
-            .then(() => {
-                message.react(emojiSuccess);
-            }).catch(() => {
-                message.react(emojiFailure);
-                message.reply(`I can't your message for now, try again a bit later`);
-            });
+        anonymousChannel.send({
+            embed: anonymousHandler.getEmbed(message.content, pseudo),
+            files: message.attachments.map(messageAttachment => {
+                return new Discord.MessageAttachment(messageAttachment.url, messageAttachment.filename);
+            })
+        }).then(() => {
+            message.react(emojiSuccess);
+        }).catch(() => {
+            message.react(emojiFailure);
+            message.reply(`I can't your message for now, try again a bit later`);
+        });
     }
 }
 

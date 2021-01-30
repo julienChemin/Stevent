@@ -66,7 +66,7 @@ module.exports = {
                 message.reply(`Look like i can't set the archive \nError : ${error}`);
             });
 
-            archivesChannel.send(`\n Archive ${fullPseudo}-${(archiveOfThisUser.length + 1)} \n`, {
+            archivesChannel.send(`\n Archive ${fullPseudo} - ${(archiveOfThisUser.length + 1)} \n`, {
                 files:[{
                     attachment: filepath
                 }]
